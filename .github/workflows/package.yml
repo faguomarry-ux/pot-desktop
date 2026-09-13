@@ -45,7 +45,9 @@ jobs:
           workspaces: src-tauri
           key: ${{ matrix.target }}
       - name: Install native dependencies
-        run: bash .scripts/install-linux-deps.sh
+        run: |
+          bash .scripts/install-linux-deps.sh
+          sudo apt-get install -y gnome-settings-daemon-common
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
       - name: Check release version

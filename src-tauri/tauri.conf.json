@@ -43,7 +43,11 @@
           "libxcb",
           "libXrandr",
           "tesseract"
-        ]
+        ],
+        "compression": {
+          "type": "zstd",
+          "level": 3
+        }
       }
     },
     "createUpdaterArtifacts": false
