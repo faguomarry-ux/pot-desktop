@@ -1,0 +1,52 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Native builds, generated schemas and packages
+/target/
+/src-tauri/target/
+/src-tauri/gen/
+*.deb
+*.rpm
+*.dmg
+*.AppImage
+*.app.tar.gz
+*.nsis.zip
+*.pbar
+*.popclipextz
+/coverage/
+/.vscode/
+
+# Local credentials and runtime configuration (never source files)
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.key
+/config.json
+/config.before-*.json
+/update.json
+/update-fix-runtime.json
+__pycache__/
+*.pyc

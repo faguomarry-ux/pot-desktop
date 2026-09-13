@@ -1,0 +1,14 @@
+{
+  "app": {
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    }
+  },
+  "bundle": {
+    "targets": [
+      "deb"
+    ],
+    "createUpdaterArtifacts": false
+  }
+}

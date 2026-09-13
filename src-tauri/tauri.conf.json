@@ -1,0 +1,96 @@
+{
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
+  },
+  "bundle": {
+    "active": true,
+    "category": "Utility",
+    "copyright": "GPLv3",
+    "targets": "all",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "longDescription": "A cross-platform text translation and ocr software",
+    "shortDescription": "Pot App",
+    "externalBin": [],
+    "resources": [],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "linux": {
+      "deb": {
+        "depends": [
+          "libxdo3",
+          "libxcb1",
+          "libxrandr2",
+          "tesseract-ocr"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "xdotool",
+          "libxcb",
+          "libXrandr",
+          "tesseract"
+        ]
+      }
+    },
+    "createUpdaterArtifacts": false
+  },
+  "productName": "pot",
+  "mainBinaryName": "pot",
+  "version": "3.0.7",
+  "identifier": "com.pot-app.desktop",
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://dl.pot-app.com/https://github.com/pot-app/pot-desktop/releases/download/updater/update.json",
+        "https://github.com/pot-app/pot-desktop/releases/download/updater/update.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBRTQxQTNDQjM5QzQzM0EKUldRNlE1eXpQQnJrV21mM1Bram5LRlF6UDA3K0Jab2FYL2lZSWhXTE5McWs2NUdJS0dtYkd5VGMK"
+    },
+    "shell": {
+      "open": ".*"
+    }
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "id": "main"
+    },
+    "security": {
+      "assetProtocol": {
+        "scope": [
+          "$CACHE/**",
+          "$CONFIG/**"
+        ],
+        "enable": true
+      },
+      "devCsp": "default-src * data: ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval'; connect-src * ipc: http://ipc.localhost https://ipc.localhost;",
+      "csp": "default-src * data: ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval'; connect-src * ipc: http://ipc.localhost https://ipc.localhost;"
+    },
+    "windows": [
+      {
+        "title": "Daemon",
+        "label": "daemon",
+        "visible": false,
+        "url": "daemon.html",
+        "additionalBrowserArgs": "--disable-web-security",
+        "useHttpsScheme": true
+      }
+    ]
+  }
+}

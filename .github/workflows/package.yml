@@ -1,0 +1,150 @@
+name: Native packages
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux ${{ matrix.arch }} DEB / RPM
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+      - name: Install native dependencies
+        run: bash .scripts/install-linux-deps.sh
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check release version
+        run: node .scripts/check-release-version.mjs
+      - name: Test adapters and GNOME shortcuts
+        run: |
+          pnpm test:adapters
+          cargo test --locked --manifest-path src-tauri/Cargo.toml gnome_hotkey
+      - name: Build DEB and RPM
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles deb,rpm -- --locked
+      - name: Inspect package metadata
+        run: |
+          for package in src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb; do
+            dpkg-deb --info "$package"
+          done
+          for package in src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm; do
+            rpm -qip "$package"
+            rpm -qpR "$package"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    name: macOS ${{ matrix.arch }} DMG
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            arch: x64
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            arch: arm64
+          - runner: macos-15
+            target: universal-apple-darwin
+            arch: universal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check release version
+        run: node .scripts/check-release-version.mjs
+      - name: Prepare OCR helpers
+        run: chmod +x src-tauri/resources/ocr-*-apple-darwin
+      - name: Build DMG (ad hoc signed, not notarized)
+        env:
+          APPLE_SIGNING_IDENTITY: '-'
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles dmg -- --locked
+      - name: Inspect application architecture
+        run: lipo -info src-tauri/target/${{ matrix.target }}/release/bundle/macos/pot.app/Contents/MacOS/pot
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish tagged packages
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          merge-multiple: true
+      - name: Generate checksums
+        working-directory: packages
+        run: sha256sum *.deb *.rpm *.dmg > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            packages/*.deb
+            packages/*.rpm
+            packages/*.dmg
+            packages/SHA256SUMS
