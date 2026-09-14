@@ -55,7 +55,7 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
         .unwrap();
     #[cfg(not(target_os = "linux"))]
     tray_handle
-        .set_tooltip(&format!("pot {}", app_handle.package_info().version))
+        .set_tooltip(Some(format!("pot {}", app_handle.package_info().version)))
         .unwrap();
 }
 
@@ -144,9 +144,15 @@ fn on_check_update_click() {
     updater_window();
 }
 fn on_view_log_click(app: &AppHandle) {
-    use tauri_plugin_shell::ShellExt;
-    let log_path = app.path().app_log_dir().unwrap();
-    app.shell().open(log_path.to_string_lossy(), None).unwrap();
+    use tauri_plugin_opener::OpenerExt;
+    let result = app.path().app_log_dir().map_err(|e| e.to_string()).and_then(|path| {
+        app.opener()
+            .open_path(path.to_string_lossy(), None::<&str>)
+            .map_err(|e| e.to_string())
+    });
+    if let Err(error) = result {
+        log::warn!("Failed to open log directory: {}", error);
+    }
 }
 fn on_restart_click(app: &AppHandle) {
     info!("============== Restart App ==============");

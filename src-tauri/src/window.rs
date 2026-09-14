@@ -11,7 +11,9 @@ use log::{info, warn};
 use tauri::Monitor;
 use tauri::WebviewWindow as Window;
 use tauri::WebviewWindowBuilder as WindowBuilder;
-use tauri::{Emitter, Listener, Manager};
+use tauri::{Emitter, Manager};
+#[cfg(not(target_os = "macos"))]
+use tauri::Listener;
 
 // Get daemon window instance
 fn get_daemon_window() -> Window {

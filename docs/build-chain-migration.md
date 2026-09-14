@@ -111,3 +111,29 @@ Universal 会先编译两种架构再合并。原有两个 OCR 辅助程序一�
 ARM64、macOS 和 Universal 需要各自 CI 构建及实机验证；当前 Linux 主机无法证明这些平台运行正常。GNOME 原生 Wayland 应用选区仍取决于与 XWayland 的同步，截图 OCR 未做完整桌面矩阵回归。仍存在上游 screenshots 0.7.2 将来兼容性警告和 shell.open 弃用警告。
 
 自动构建、产物下载与发布方式见 [CI 与发布说明](ci-packaging.md)。
+
+## 7. 2026-09-14：macOS CI 编译修复
+
+首次 CI 的 Linux DEB/RPM 构建成功，但 macOS 在 `src-tauri/src/tray.rs` 报 E0308。
+`TrayIcon::set_tooltip` 在 Tauri 2 中接收 `Option<S>`，原来的平台条件分支仍传入
+`&String`，因此 Linux 编译无法发现该错误。现改为 `Some(format!(...))`，同时覆盖
+macOS 与 Windows 的这处调用。
+
+应用代码警告一并处理：
+
+- `Listener` 只在非 macOS 的截图事件分支使用，导入添加同样的条件编译。
+- 托盘“查看日志”由弃用的 `tauri-plugin-shell::open` 改为
+  `tauri-plugin-opener::open_path`，并注册 Rust 插件；打开失败记录日志，不再 unwrap 退出。
+- `Cargo.lock` 增加 `tauri-plugin-opener 2.5.5`。此功能由 Rust 托盘事件调用，无须额外开放前端路径权限。
+
+仍保留的上游警告：`screenshots 0.7.2` 的两个 Wayland D-Bus `method_call`
+依赖 never type 回退到 `()`。这是将来 Rust 兼容性提示，当前固定工具链仍能编译。
+诊断命令应在 `src-tauri` 目录中执行：
+
+```bash
+cargo report future-incompatibilities --id 1
+```
+
+报告编号随本地 Cargo 记录变化。后续可评估上游修复或最小补丁；此次没有使用
+`allow` 或全局 RUSTFLAGS 隐藏警告，也没有在缺少截图实机回归的情况下升级整个截图 API。
+修复后 macOS 各架构是否成功，以新提交对应的 Actions 作业为准。
