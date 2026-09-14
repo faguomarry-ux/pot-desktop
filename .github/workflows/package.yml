@@ -117,9 +117,22 @@ jobs:
       - name: Build DMG (ad hoc signed, not notarized)
         env:
           APPLE_SIGNING_IDENTITY: '-'
-        run: pnpm tauri build --target ${{ matrix.target }} --bundles dmg -- --locked
+        # Request app explicitly: when only dmg is requested, Tauri removes
+        # the intermediate .app after creating the disk image.
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles app,dmg -- --locked
       - name: Inspect application architecture
-        run: lipo -info src-tauri/target/${{ matrix.target }}/release/bundle/macos/pot.app/Contents/MacOS/pot
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        run: |
+          binary="src-tauri/target/$BUILD_TARGET/release/bundle/macos/pot.app/Contents/MacOS/pot"
+          test -s "$binary"
+          lipo -info "$binary"
+          case "$BUILD_TARGET" in
+            aarch64-apple-darwin) lipo "$binary" -verify_arch arm64 ;;
+            x86_64-apple-darwin) lipo "$binary" -verify_arch x86_64 ;;
+            universal-apple-darwin) lipo "$binary" -verify_arch arm64 x86_64 ;;
+            *) echo "Unexpected target: $BUILD_TARGET" >&2; exit 1 ;;
+          esac
       - uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}

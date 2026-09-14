@@ -97,7 +97,7 @@ DMG 必须在 macOS 构建：
 ```bash
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
 chmod +x src-tauri/resources/ocr-*-apple-darwin
-pnpm tauri build --target universal-apple-darwin --bundles dmg -- --locked
+pnpm tauri build --target universal-apple-darwin --bundles app,dmg -- --locked
 ```
 
 Universal 会先编译两种架构再合并。原有两个 OCR 辅助程序一并保留，并在打包前赋予执行权限。CI 使用 ad hoc 签名，不包含 Apple Developer 证书签名或公证；正式分发需要另外配置证书和公证凭据，不能把凭据提交到仓库。
@@ -137,3 +137,17 @@ cargo report future-incompatibilities --id 1
 报告编号随本地 Cargo 记录变化。后续可评估上游修复或最小补丁；此次没有使用
 `allow` 或全局 RUSTFLAGS 隐藏警告，也没有在缺少截图实机回归的情况下升级整个截图 API。
 修复后 macOS 各架构是否成功，以新提交对应的 Actions 作业为准。
+
+
+## 8. 2026-09-14：DMG 完成后 lipo 找不到应用
+
+后续 macOS CI 已进入打包后的检查步骤，但 `lipo` 找不到
+`bundle/macos/pot.app/Contents/MacOS/pot`。检查当前 CLI 2.11.4 的
+[Tauri bundler 源码](https://github.com/tauri-apps/tauri/blob/tauri-cli-v2.11.4/crates/tauri-bundler/src/bundle.rs)
+确认：如果只请求 DMG，打包器会在生成磁盘映像后清理中间 `.app`。
+因此这次错误属于工作流的产物保留与检查顺序问题，不是上次的 Rust 类型错误。
+
+工作流改用 `--bundles app,dmg`，显式保留 `.app`。检查仍要求主程序存在且非空，
+并用 `lipo -verify_arch` 验证 ARM64、x64 或 Universal 对应的实际架构。
+上传的下载产物仍为 DMG；没有跳过失败检查，也没有用其他架构的文件替代。
+Linux 构建命令不变。本机只验证工作流语法，macOS 实际打包结果以新 CI 为准。

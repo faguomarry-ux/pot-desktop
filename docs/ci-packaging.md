@@ -48,7 +48,7 @@ DMG 使用 ad hoc 签名，不等于 Developer ID 签名或 Apple 公证。未�
 
 Linux runner 额外安装 `gnome-settings-daemon-common`，为内存后端的快捷键测试提供 schema，不启动 GNOME 桌面。RPM 显式使用 zstd level 3 压缩，适用于支持 zstd 的现代 RPM 系统。
 
-Linux 作业执行 15 项离线 JS 测试、GNOME 快捷键 Rust 单元测试，并读取 DEB/RPM 的包元数据。macOS 作业检查主程序 Mach-O 架构。构建不自动执行真实桌面翻译、OCR 或系统快捷键测试；各架构仍应实机安装验证。
+Linux 作业执行 15 项离线 JS 测试、GNOME 快捷键 Rust 单元测试，并读取 DEB/RPM 的包元数据。macOS 作业使用 `--bundles app,dmg` 保留 `.app`（只打 DMG 时 Tauri 会清理它），再检查主程序 Mach-O 架构并验证目标架构确实存在。构建不自动执行真实桌面翻译、OCR 或系统快捷键测试；各架构仍应实机安装验证。
 
 如某个矩阵失败，其他架构继续构建且可保留 artifact，但不会发布不完整的标签 Release。先查看失败的安装依赖、Cargo 编译或 bundle 步骤；不要将一个平台成功解释为整个矩阵通过。首次 CI 结果以 Actions 实际状态为准。
 
